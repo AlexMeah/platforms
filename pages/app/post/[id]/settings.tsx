@@ -9,13 +9,13 @@ import Layout from "@/components/app/Layout";
 import Loader from "@/components/app/Loader";
 import LoadingDots from "@/components/app/loading-dots";
 import Modal from "@/components/Modal";
-import saveImage from "@/lib/save-image";
 import { fetcher } from "@/lib/fetcher";
 import { HttpMethod } from "@/types";
 
 import type { ChangeEvent } from "react";
 
 import type { WithSitePost } from "@/types";
+import { placeholderBlurhash } from "@/lib/utils";
 
 interface SettingsData {
   slug: string;
@@ -149,7 +149,12 @@ export default function PostSettings() {
                 } relative mt-5 w-full border-2 border-gray-800 border-dashed rounded-md`}
               >
                 <CloudinaryUploadWidget
-                  callback={(e) => saveImage(e, data, setData)}
+                  callback={(e) =>
+                    setData({
+                      ...data,
+                      image: e.secure_url,
+                    })
+                  }
                 >
                   {({ open }) => (
                     <button
@@ -175,11 +180,9 @@ export default function PostSettings() {
                     alt="Cover Photo"
                     width={800}
                     height={500}
-                    layout="responsive"
-                    objectFit="cover"
                     placeholder="blur"
-                    className="rounded-md"
-                    blurDataURL={data.imageBlurhash}
+                    className="rounded-md w-full h-full object-cover"
+                    blurDataURL={data.imageBlurhash || placeholderBlurhash}
                   />
                 )}
               </div>

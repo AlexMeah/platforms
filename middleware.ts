@@ -1,22 +1,29 @@
+import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 export const config = {
   matcher: [
-    "/",
-    "/([^/.]*)", // exclude `/public` files by matching all paths except for paths containing `.` (e.g. /logo.png)
-    "/site/:path*", // for app.vercel.pub/site/[siteId]
-    "/post/:path*", // for app.vercel.pub/post/[postId]
-    "/_sites/:path*", // for all custom hostnames under the `/_sites/[site]*` dynamic route (demo.vercel.pub, platformize.co)
+    /*
+     * Match all paths except for:
+     * 1. /api routes
+     * 2. /_next (Next.js internals)
+     * 3. /examples (inside /public)
+     * 4. all root files inside /public (e.g. /favicon.ico)
+     */
+    "/((?!api/|_next/|_static/|examples/|[\\w-]+\\.\\w+).*)",
   ],
 };
 
-export default function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const url = req.nextUrl;
 
   // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3000)
   const hostname = req.headers.get("host") || "demo.vercel.pub";
 
-  // Only for demo purposes – remove this if you want to use your root domain as the landing page
+  // Get the pathname of the request (e.g. /, /about, /blog/first-post)
+  const path = url.pathname;
+
+  // Only for demo purposes - remove this if you want to use your root domain as the landing page
   if (hostname === "vercel.pub" || hostname === "platforms.vercel.app") {
     return NextResponse.redirect("https://demo.vercel.pub");
   }
@@ -49,11 +56,11 @@ export default function middleware(req: NextRequest) {
 
   // rewrite root application to `/home` folder
   if (hostname === "localhost:3000" || hostname === "platformize.vercel.app") {
-    url.pathname = `/home${url.pathname}`;
-    return NextResponse.rewrite(url);
+    return NextResponse.rewrite(new URL(`/home${path}`, req.url));
   }
 
   // rewrite everything else to `/_sites/[site] dynamic route
-  url.pathname = `/_sites/${currentHost}${url.pathname}`;
-  return NextResponse.rewrite(url);
+  return NextResponse.rewrite(
+    new URL(`/_sites/${currentHost}${path}`, req.url)
+  );
 }
